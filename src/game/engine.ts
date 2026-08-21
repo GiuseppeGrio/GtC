@@ -1214,10 +1214,12 @@ export class ClompGame {
 
   private walkAnim(rig: WalkRig, t: number) {
     const s = Math.sin(t);
-    rig.legL.rotation.x = s * 0.7;
-    rig.legR.rotation.x = -s * 0.7;
-    rig.armL.rotation.x = -s * 0.5;
-    rig.armR.rotation.x = s * 0.5;
+    // gli arti oscillano attorno all'asse trasversale (z locale):
+    // il piede/mano si muove in avanti-indietro, non lateralmente
+    rig.legL.rotation.z = s * 0.7;
+    rig.legR.rotation.z = -s * 0.7;
+    rig.armL.rotation.z = -s * 0.5;
+    rig.armR.rotation.z = s * 0.5;
   }
 
   // ── SIMULAZIONE ─────────────────────────────────────────────────────────
@@ -1243,8 +1245,8 @@ export class ClompGame {
         this.player.position.z += (mz / len) * sp * dt;
         this.walkAnim(this.rig, this.clock.elapsedTime * (sprint ? 12 : 8));
       } else {
-        this.rig.legL.rotation.x *= 0.8; this.rig.legR.rotation.x *= 0.8;
-        this.rig.armL.rotation.x *= 0.8; this.rig.armR.rotation.x *= 0.8;
+        this.rig.legL.rotation.z *= 0.8; this.rig.legR.rotation.z *= 0.8;
+        this.rig.armL.rotation.z *= 0.8; this.rig.armR.rotation.z *= 0.8;
       }
       this.player.rotation.y = this.pHeading - Math.PI / 2;
       // salto

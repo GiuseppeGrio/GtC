@@ -65,7 +65,7 @@ export function questionTexture(): THREE.CanvasTexture {
 }
 
 // ── La Toyota Yaris 2007 ──────────────────────────────────────────────────
-export function makeYaris(paint = 0xcfd6dd) {
+export function makeYaris(paint = 0x1e3a8a) {
   const g = new THREE.Group();
   const bodyMat = lam(paint);
   const dark = lam(0x2c3440);

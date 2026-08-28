@@ -3,7 +3,7 @@ import type { MissionCardData, EndingStats, ToastKind } from '../game/types';
 import { ENDING_CREDITS, ENDING_EPILOGUE } from '../game/missions';
 import { loveLevel } from './HUD';
 
-const TITLE_BG = 'https://image.qwenlm.ai/generated-images/36a85940-ac9b-4fb0-a6c5-5c0e6d80ac8b/_result.png';
+const TITLE_BG = 'https://image.qwenlm.ai/generated-images/8c39eb39-a567-44cb-8a74-55a0dc9357f4/_result.png';
 
 const FloatHeart = ({ left, delay, size }: { left: string; delay: string; size: number }) => (
   <svg viewBox="0 0 24 24" className="absolute bottom-[-40px] text-love/60 anim-floaty" style={{ left, animationDelay: delay, width: size, height: size, animationDuration: '5s' }} fill="currentColor">

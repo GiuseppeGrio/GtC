@@ -302,7 +302,7 @@ export function buildWorld(scene: THREE.Scene): WorldData {
   // ── punti d'interesse ──
   const questSpots: Record<string, [number, number]> = {
     pina: [-112, -76], rosa: [90, 66], tonino: [14, 14], focaccino: [262, 36],
-    sindaco: [-16, 12], bruscolo: [104, -74], ugo: [-104, 92], spolverina: [-16, 108],
+    sindaco: [-16, 12], bruscolo: [104, -74], ugo: [-104, 92], spolverina: [-34, 92],
     steve: [270, 36], fata: [120, 112],
     gelsomino: [-140, -80], wanda: [-60, 80], anselmo: [60, -80],
     pizzeria: [124, -112], garage: [-100, -120],

@@ -27,31 +27,34 @@ html, body, #root {
 canvas { display: block; outline: none; }
 
 /* ---------- toy sticker UI ---------- */
-.sticker {
-  background: var(--color-paper);
-  border: 3px solid var(--color-ink);
-  border-radius: 14px;
-  box-shadow: 4px 4px 0 var(--color-ink);
+@layer components {
+  .sticker {
+    background-color: var(--color-paper);
+    border: 3px solid var(--color-ink);
+    border-radius: 14px;
+    box-shadow: 4px 4px 0 var(--color-ink);
+    color: var(--color-ink);
+  }
+  .sticker-dark {
+    background-color: rgba(14, 35, 71, 0.95);
+    border: 3px solid #0a1a33;
+    border-radius: 14px;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+    color: #fff;
+  }
+  .btn-toy {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+    border: 3px solid var(--color-ink);
+    border-radius: 12px;
+    box-shadow: 0 5px 0 var(--color-ink);
+    transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.12s ease;
+    cursor: pointer;
+    user-select: none;
+  }
+  .btn-toy:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  .btn-toy:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--color-ink); }
 }
-.sticker-dark {
-  background: rgba(14, 35, 71, 0.92);
-  border: 3px solid #0a1a33;
-  border-radius: 14px;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
-  color: #fff;
-}
-.btn-toy {
-  font-family: var(--font-display);
-  letter-spacing: 0.02em;
-  border: 3px solid var(--color-ink);
-  border-radius: 12px;
-  box-shadow: 0 5px 0 var(--color-ink);
-  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.12s ease;
-  cursor: pointer;
-  user-select: none;
-}
-.btn-toy:hover { filter: brightness(1.06); transform: translateY(-1px); }
-.btn-toy:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--color-ink); }
 
 /* ---------- animations ---------- */
 @keyframes toast-in {

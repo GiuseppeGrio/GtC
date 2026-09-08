@@ -26,7 +26,7 @@ const angleLerp = (a: number, b: number, t: number) => {
 interface NpcRec {
   id: string; name: string; color: string; group: THREE.Group; rig: WalkRig;
   home: [number, number]; target: [number, number] | null; wait: number; hop: number;
-  wanders: boolean; marker?: THREE.Mesh;
+  wanders: boolean; marker?: THREE.Mesh; lastBonk?: number;
 }
 interface KartAI {
   group: THREE.Group; wheels: THREE.Mesh[]; heading: number; x: number; z: number;
@@ -384,10 +384,8 @@ export class ClompGame {
       if (this.flags.hasSword) this.grantSword(true);
       if (this.mIdx < MISSIONS.length) {
         const giver = MISSIONS[this.mIdx].giver;
-        const spot = this.world.questSpots[giver];
-        this.freeTarget = spot;
+        this.freeTarget = this.world.questSpots[giver];
         this.objective = `Vai da ${GIVER_NAMES[giver] ?? giver}`;
-        this.setMarker(spot[0], spot[1]);
       }
     } else this.startMission(0);
     this.hooks.toast('Bentornato a Cuorcontento!', 'info');
@@ -403,11 +401,6 @@ export class ClompGame {
     this.sfx.setMuted(!this.sfx.muted);
     return this.sfx.muted;
   }
-
-  getMuted(): boolean { return this.sfx.muted; }
-
-  /** salvataggio esplicito (es. "salva e torna al titolo") */
-  saveNow() { if (this.started) this.save(); }
 
   /** la UI ha finito le righe (choiceIdx = -1 se nessuna scelta) */
   dialogDone(choiceIdx: number) {
@@ -616,8 +609,6 @@ export class ClompGame {
       this.setMarker(spot[0], spot[1]);
       this.marker.material = new THREE.MeshLambertMaterial({ color: 0xffc93c, emissive: 0xffc93c, emissiveIntensity: 0.9 });
     } else {
-      this.markerOn = false;
-      this.marker.visible = false;
       this.objective = 'Gira libero per Cuorcontento! Cuoricini, focacce d\'oro e buone azioni ti aspettano.';
     }
     this.save();
@@ -632,8 +623,6 @@ export class ClompGame {
   private clearPickups() {
     for (const p of this.pickups) this.scene.remove(p.group);
     this.pickups = [];
-    // se c'è una Buona Azione in corso, il suo oggetto deve ricomparire (anti-softlock)
-    if (this.activeSide) this.spawnPickup(this.activeSide.kind, this.activeSide.target[0], this.activeSide.target[1]);
   }
   private setMarker(x: number, z: number) {
     this.markerOn = true;
@@ -876,12 +865,10 @@ export class ClompGame {
     this.sfx.heart();
     this.shake = Math.max(this.shake, 0.5);
     if (this.bossHp > 0) {
-      this.shoutSay('Ombra Grigia', OMBRA_HIT_LINES[4 - this.bossHp] ?? OMBRA_HIT_LINES[OMBRA_HIT_LINES.length - 1], '#3a4157');
+      this.shoutSay('Ombra Grigia', OMBRA_HIT_LINES[5 - this.bossHp] ?? OMBRA_HIT_LINES[OMBRA_HIT_LINES.length - 1], '#3a4157');
     } else {
       this.ombra.visible = false;
       this.bossOn = false;
-      for (const b of this.blobs) this.scene.remove(b.mesh);
-      this.blobs = [];
       this.confettiRain(4);
       this.sfx.levelup();
       this.completeStep();
@@ -1031,18 +1018,14 @@ export class ClompGame {
 
   private interact() {
     const pos = this.onFoot ? this.player.position : this.car.position;
+    // sali/scendi dalla macchina
+    const carD = Math.hypot(this.car.position.x - this.player.position.x, this.car.position.z - this.player.position.z);
     if (this.onFoot) {
-      // prima si parla con la gente, poi si sale in macchina
-      const talk = this.resolveTalkTarget(pos);
-      if (talk) { this.openTalk(talk); return; }
-      const carD = Math.hypot(this.car.position.x - this.player.position.x, this.car.position.z - this.player.position.z);
       if (carD < 4) { this.enterCar(false); return; }
-    } else {
-      if (Math.abs(this.carSpeed) >= 3) return;
-      const talk = this.resolveTalkTarget(pos);
-      if (talk) { this.openTalk(talk); return; }
-      this.exitCar(false);
-    }
+    } else if (Math.abs(this.carSpeed) < 3) { this.exitCar(false); return; }
+    // parla con NPC
+    const talk = this.resolveTalkTarget(pos);
+    if (talk) this.openTalk(talk);
   }
 
   private resolveTalkTarget(pos: THREE.Vector3): NpcRec | null {
@@ -1319,10 +1302,12 @@ export class ClompGame {
       this.sfx.setEngine(Math.min(1, Math.abs(this.carSpeed) / CAR_MAX), true);
       this.updateCameraDrive(dt);
       // collisione con NPC: spavento bonario
+      const now = performance.now();
       for (const n of this.npcs) {
         if (!n.group.visible) continue;
         const d = Math.hypot(n.group.position.x - this.car.position.x, n.group.position.z - this.car.position.z);
-        if (d < 2.2 && Math.abs(this.carSpeed) > 4) {
+        if (d < 2.2 && Math.abs(this.carSpeed) > 4 && (!n.lastBonk || now - n.lastBonk > 2500)) {
+          n.lastBonk = now;
           n.hop = 1;
           this.sfx.pop();
           this.toast(`${n.name}: "EHI! Guarda dove guidi, giovanotto dal ciuffo blu!"`, 'fun');
@@ -1470,12 +1455,7 @@ export class ClompGame {
             } else {
               const [nx, nz] = spots[this.chaseIdx];
               if (s.target === 'cat') { this.cat.position.set(nx, 0, nz); this.cat.userData.hop = 1; }
-              else {
-                const b = this.npcById.bruscolo;
-                b.group.position.set(nx, 0, nz);
-                b.home = [nx, nz];
-                b.hop = 1;
-              }
+              else { this.npcById.bruscolo.group.position.set(nx, 0, nz); this.npcById.bruscolo.hop = 1; }
               this.setMarker(nx, nz);
             }
           }
@@ -1837,7 +1817,7 @@ export class ClompGame {
     const wantFov = 62 + Math.min(1, Math.abs(this.carSpeed) / 40) * 10;
     this.camera.fov += (wantFov - this.camera.fov) * Math.min(1, dt * 4);
     this.camera.updateProjectionMatrix();
-    this.applyShake(dt);
+    this.applyShake();
   }
   private updateCameraFoot(dt: number) {
     const f = 1 - Math.exp(-6 * dt);
@@ -1847,13 +1827,13 @@ export class ClompGame {
     this.camera.lookAt(this.player.position.x + fx * 2, 1.6, this.player.position.z + fz * 2);
     this.camera.fov += (60 - this.camera.fov) * Math.min(1, dt * 4);
     this.camera.updateProjectionMatrix();
-    this.applyShake(dt);
+    this.applyShake();
   }
-  private applyShake(dt: number) {
+  private applyShake() {
     if (this.shake > 0) {
-      this.shake = Math.max(0, this.shake - dt * 1.7);
-      this.camera.position.x += (Math.random() - 0.5) * this.shake * 1.3;
-      this.camera.position.y += (Math.random() - 0.5) * this.shake * 1.3;
+      this.shake = Math.max(0, this.shake - this.clock.getDelta() * 0 - 0.016);
+      this.camera.position.x += (Math.random() - 0.5) * this.shake;
+      this.camera.position.y += (Math.random() - 0.5) * this.shake;
     }
   }
 

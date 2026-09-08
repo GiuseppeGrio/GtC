@@ -23,17 +23,8 @@ export default function App() {
   const [ending, setEnding] = useState<EndingStats | null>(null);
   const toastId = useRef(0);
 
-  const resetUi = () => {
-    setHud(null);
-    setDialog(null);
-    setToasts([]);
-    setCard(null);
-    setPaused(false);
-    setEnding(null);
-  };
-
-  const makeEngine = (): ClompGame | null => {
-    if (!canvasRef.current) return null;
+  useEffect(() => {
+    if (!canvasRef.current) return;
     const engine = new ClompGame(
       {
         hud: h => setHud(h),
@@ -53,57 +44,34 @@ export default function App() {
       canvasRef.current,
       mapRef.current
     );
-    engine.init();
     engineRef.current = engine;
-    return engine;
-  };
-
-  useEffect(() => {
-    const engine = makeEngine();
-    if (engine) setHasSave(engine.hasSave());
-    return () => {
-      engineRef.current?.destroy();
-      engineRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    engine.init();
+    setHasSave(engine.hasSave());
+    return () => engine.destroy();
   }, []);
 
-  // la minimappa viene montata col primo HUD: ricollegala quando appare
+  // la minimappa viene montata dopo il primo render: ricollegala quando esiste
   useEffect(() => {
-    if (screen === 'game' && mapRef.current && engineRef.current) {
+    if (screen === 'game' && mapRef.current) {
       (engineRef.current as unknown as { mapCanvas: HTMLCanvasElement | null }).mapCanvas = mapRef.current;
     }
-  }, [screen, hud == null]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [screen, hud == null]);
 
   const startNew = () => {
-    engineRef.current?.destroy();
-    engineRef.current = null;
-    resetUi();
-    const eng = makeEngine();
-    eng?.newGame();
-    setMuted(eng?.getMuted() ?? false);
     setScreen('game');
+    setEnding(null);
+    engineRef.current?.newGame();
   };
-
   const startContinue = () => {
-    engineRef.current?.destroy();
-    engineRef.current = null;
-    resetUi();
-    const eng = makeEngine();
-    eng?.continueGame();
-    setMuted(eng?.getMuted() ?? false);
     setScreen('game');
+    setEnding(null);
+    engineRef.current?.continueGame();
   };
-
   const quitToTitle = () => {
-    const eng = engineRef.current;
-    eng?.setPaused(false);
-    eng?.saveNow();
-    setHasSave(eng?.hasSave() ?? false);
-    eng?.destroy();
-    engineRef.current = null;
-    resetUi();
+    engineRef.current?.setPaused(false);
+    setPaused(false);
     setScreen('title');
+    setHasSave(engineRef.current?.hasSave() ?? false);
   };
 
   const inGame = screen === 'game';

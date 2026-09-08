@@ -1,0 +1,6 @@
+{
+  "name": "Clomp: Cuorcontento City",
+  "description": "A top-down 3D cartoon open-world adventure game set in Cuorcontento City.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

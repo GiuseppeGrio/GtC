@@ -3,7 +3,7 @@ import type { MissionCardData, EndingStats, ToastKind } from '../game/types';
 import { ENDING_CREDITS, ENDING_EPILOGUE } from '../game/missions';
 import { loveLevel } from './HUD';
 
-const TITLE_BG = 'https://image.qwenlm.ai/generated-images/8c39eb39-a567-44cb-8a74-55a0dc9357f4/_result.png';
+const TITLE_BG = 'https://image.qwenlm.ai/generated-images/36a85940-ac9b-4fb0-a6c5-5c0e6d80ac8b/_result.png';
 
 const FloatHeart = ({ left, delay, size }: { left: string; delay: string; size: number }) => (
   <svg viewBox="0 0 24 24" className="absolute bottom-[-40px] text-love/60 anim-floaty" style={{ left, animationDelay: delay, width: size, height: size, animationDuration: '5s' }} fill="currentColor">
@@ -90,23 +90,39 @@ export function PauseScreen({ onResume, onMute, muted, onQuit }: { onResume: () 
   );
 }
 
+// Utility per calcolare la leggibilità del colore testo
+function isLightHex(hex?: string): boolean {
+  if (!hex) return true;
+  const clean = hex.replace('#', '');
+  if (clean.length !== 6) return true;
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 145;
+}
+
 export function MissionCardView({ card }: { card: MissionCardData }) {
   return (
     <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-      <div className={`sticker px-7 py-4 anim-pop text-center ${card.kind === 'complete' ? 'bg-[#eafff0]' : 'bg-[#fff3d6]'}`}>
+      <div
+        className={`anim-pop text-center px-7 py-4 rounded-2xl border-3 border-ink shadow-[4px_4px_0_#16324f] ${
+          card.kind === 'complete' ? 'bg-[#eafff0]' : 'bg-[#fff3d6]'
+        }`}
+      >
         {card.kind === 'start' && (
           <>
             <div className="font-display text-[11px] tracking-[0.25em] text-lovedeep">NUOVA MISSIONE</div>
             <div className="font-display text-2xl text-ink mt-1">{card.title}</div>
-            <div className="text-[12px] font-bold text-ink/60 mt-1">📍 {card.zone}</div>
+            <div className="text-[12px] font-bold text-ink/75 mt-1">📍 {card.zone}</div>
           </>
         )}
         {card.kind === 'complete' && (
           <>
-            <div className="font-display text-[11px] tracking-[0.25em] text-[#1f9d55]">MISSIONE COMPIUTA</div>
+            <div className="font-display text-[11px] tracking-[0.25em] text-[#137a3f]">MISSIONE COMPIUTA</div>
             <div className="font-display text-2xl text-ink mt-1">{card.title}</div>
-            <div className="text-[13px] font-bold text-love mt-1">+{card.reward} Amore Puro</div>
-            {card.next && <div className="text-[12px] font-bold text-ink/60 mt-1">Prossima tappa: {card.next}</div>}
+            <div className="text-[14px] font-bold text-lovedeep mt-1">+{card.reward} Amore Puro</div>
+            {card.next && <div className="text-[12px] font-bold text-ink/75 mt-1">Prossima tappa: {card.next}</div>}
           </>
         )}
       </div>
@@ -115,19 +131,69 @@ export function MissionCardView({ card }: { card: MissionCardData }) {
 }
 
 export function ToastStack({ toasts }: { toasts: { id: number; text: string; kind: ToastKind }[] }) {
-  const styles: Record<ToastKind, string> = {
-    info: 'bg-paper text-ink',
-    love: 'bg-love text-white',
-    warn: 'bg-gold text-ink',
-    fun: 'bg-tealx text-white',
+  const configs: Record<
+    ToastKind,
+    { bg: string; border: string; badgeBg: string; badgeText: string; defaultLabel: string; icon: string }
+  > = {
+    info: {
+      bg: 'bg-[#fffdf6]',
+      border: 'border-ink',
+      badgeBg: 'bg-[#7fd0ff]',
+      badgeText: 'text-ink',
+      defaultLabel: 'INFO',
+      icon: 'ℹ️',
+    },
+    love: {
+      bg: 'bg-[#fff0f5]',
+      border: 'border-lovedeep',
+      badgeBg: 'bg-lovedeep',
+      badgeText: 'text-white',
+      defaultLabel: 'AMORE',
+      icon: '💗',
+    },
+    warn: {
+      bg: 'bg-[#fff9db]',
+      border: 'border-[#d97706]',
+      badgeBg: 'bg-[#d97706]',
+      badgeText: 'text-white',
+      defaultLabel: 'AVVISO',
+      icon: '⚠️',
+    },
+    fun: {
+      bg: 'bg-[#eefcf9]',
+      border: 'border-[#0fa899]',
+      badgeBg: 'bg-[#0fa899]',
+      badgeText: 'text-white',
+      defaultLabel: 'CITTÀ',
+      icon: '💬',
+    },
   };
+
   return (
-    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 grid gap-2 pointer-events-none w-[min(560px,92vw)]">
-      {toasts.map(t => (
-        <div key={t.id} className={`sticker anim-toast px-4 py-2.5 text-center ${styles[t.kind]}`}>
-          <span className="font-bold text-[13px]">{t.text}</span>
-        </div>
-      ))}
+    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 grid gap-2.5 pointer-events-none w-[min(620px,94vw)]">
+      {toasts.map(t => {
+        const cfg = configs[t.kind] || configs.info;
+        const match = t.text.match(/^([^:]+):\s*"?(.*?)"?$/);
+        const speaker = match ? match[1] : null;
+        const quote = match ? match[2] : null;
+
+        return (
+          <div
+            key={t.id}
+            className={`anim-toast px-4 py-2.5 rounded-2xl border-3 shadow-[4px_4px_0_#16324f] flex items-center gap-3 ${cfg.bg} ${cfg.border}`}
+          >
+            <span
+              className={`font-display text-[11px] px-2.5 py-0.5 rounded-full uppercase tracking-wider font-bold shrink-0 border border-ink/20 shadow-[1px_1px_0_rgba(0,0,0,0.12)] flex items-center gap-1.5 ${cfg.badgeBg} ${cfg.badgeText}`}
+            >
+              <span>{cfg.icon}</span>
+              <span>{speaker ? speaker : cfg.defaultLabel}</span>
+            </span>
+            <span className="font-bold text-[13px] md:text-[14px] leading-snug text-ink text-left flex-1">
+              {quote ? `"${quote}"` : t.text}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -155,7 +221,12 @@ export function EndingScreen({ stats, onContinue }: { stats: EndingStats; onCont
           <div className="max-w-[720px] w-full">
             {ENDING_EPILOGUE.slice(0, lineIdx).map((l, i) => (
               <p key={i} className="anim-rise mb-4 text-center">
-                <span className="font-display text-sm block" style={{ color: l.color === '#8d939e' ? '#b9c2d8' : l.color }}>{l.speaker}</span>
+                <span
+                  className="font-display text-sm block"
+                  style={{ color: !isLightHex(l.color) || l.color === '#8d939e' ? '#ffd166' : l.color }}
+                >
+                  {l.speaker}
+                </span>
                 <span className="text-paper/95 text-lg leading-relaxed font-medium">{l.text}</span>
               </p>
             ))}

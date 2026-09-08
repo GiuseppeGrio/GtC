@@ -23,6 +23,17 @@ export function loveLevel(love: number): { lvl: number; name: string } {
   return { lvl: lvl + 1, name: names[lvl] };
 }
 
+function isLightHex(hex?: string): boolean {
+  if (!hex) return true;
+  const clean = hex.replace('#', '');
+  if (clean.length !== 6) return true;
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 145;
+}
+
 export default function HUD({ hud, mapRef }: { hud: HudData; mapRef: React.RefObject<HTMLCanvasElement> }) {
   const { lvl, name } = loveLevel(hud.love);
   const battle = hud.raceTotal != null && hud.lap == null;
@@ -38,14 +49,23 @@ export default function HUD({ hud, mapRef }: { hud: HudData; mapRef: React.RefOb
           <p className="mt-1 text-[13px] font-medium text-ink/85 leading-snug">{hud.objective}</p>
         </div>
         {hud.timer != null && (
-          <div className={`sticker mt-2 px-4 py-2 inline-block ${hud.timer < 10 ? 'bg-[#ffe3ec]' : ''}`}>
+          <div
+            className={`mt-2 px-4 py-2 inline-block rounded-xl border-3 border-ink shadow-[3px_3px_0_#16324f] ${
+              hud.timer < 10 ? 'bg-[#ffe3ec]' : 'bg-[#fffdf6]'
+            }`}
+          >
             <span className="font-display text-xl text-lovedeep tabular-nums">⏱ {hud.timer}s</span>
           </div>
         )}
         {hud.shout && (
           <div key={hud.shout.id} className="sticker-dark mt-2 px-4 py-2.5 anim-shout max-w-[380px]">
-            <span className="font-display text-[11px]" style={{ color: hud.shout.color === '#3a4157' ? '#b9c2d8' : hud.shout.color }}>{hud.shout.speaker}</span>
-            <p className="text-[13px] leading-snug text-white/95">{hud.shout.text}</p>
+            <span
+              className="font-display text-[11px] tracking-wider uppercase block"
+              style={{ color: !isLightHex(hud.shout.color) || hud.shout.color === '#3a4157' ? '#ffd166' : hud.shout.color }}
+            >
+              {hud.shout.speaker}
+            </span>
+            <p className="text-[13px] leading-snug text-white font-medium mt-0.5">{hud.shout.text}</p>
           </div>
         )}
       </div>
